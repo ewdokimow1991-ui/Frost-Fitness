@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -34,7 +35,7 @@ data class Food(val name:String,val kcal:Int,val p:Int,val c:Int,val f:Int)
 enum class Screen{WELCOME,GOAL,BASICS,EXP,DAYS,PLACE,HEALTH,HOME,WORKOUT,EXERCISE,FOOD,PROGRESS,PROFILE}
 class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.onCreate(b);setContent{App()}}}
 
-@Composable fun App(){var s by remember{mutableStateOf(Screen.WELCOME)};val p=remember{Profile()};var chosen by remember{mutableStateOf<Workout?>(null)};var exercise by remember{mutableStateOf<Exercise?>(null)};var completed by remember{mutableStateOf(0)};var foods by remember{mutableStateOf(listOf<Food>())};MaterialTheme(colorScheme=darkColorScheme(primary=Lime,background=Bg,surface=Card,onPrimary=Color.Black,onBackground=Color.White,onSurface=Color.White)){Surface(Modifier.fillMaxSize(),color=Bg){when(s){
+@Composable fun App(){val context=LocalContext.current;val p=remember{loadProfile(context)};var s by remember{mutableStateOf(loadScreen(context))};var chosen by remember{mutableStateOf<Workout?>(null)};var exercise by remember{mutableStateOf<Exercise?>(null)};var completed by remember{mutableStateOf(loadCompleted(context))};var foods by remember{mutableStateOf(listOf<Food>())};LaunchedEffect(s,p.goal,p.age,p.height,p.weight,p.experience,p.days,p.place,p.health,completed){saveAppState(context,p,s,completed)};MaterialTheme(colorScheme=darkColorScheme(primary=Lime,background=Bg,surface=Card,onPrimary=Color.Black,onBackground=Color.White,onSurface=Color.White)){Surface(Modifier.fillMaxSize(),color=Bg){when(s){
 Screen.WELCOME->Page("Frost Fitness","Фростик — твой тренер по технике движений."){Info("FF создаёт программу по твоей цели, опыту, оборудованию и ограничениям здоровья.");Go("Создать программу"){s=Screen.GOAL}}
 Screen.GOAL->Select("Твоя цель",listOf("Снизить вес","Набрать мышцы","Стать сильнее","Поддерживать форму"),p.goal,{p.goal=it}){s=Screen.BASICS}
 Screen.BASICS->Page("Основные данные","Для персонализации и отслеживания прогресса."){Input("Возраст",p.age){p.age=it};Input("Рост, см",p.height){p.height=it};Input("Вес, кг",p.weight,true){p.weight=it};Go("Продолжить",p.age.isNotBlank()&&p.height.isNotBlank()&&p.weight.isNotBlank()){s=Screen.EXP}}
