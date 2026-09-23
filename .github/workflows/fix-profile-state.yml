@@ -29,3 +29,4 @@ jobs:
           git add app/src/main/java/com/frostfitness/app/MainActivity.kt
           git commit -m 'Fix Compose profile input state'
           git push
+# trigger
