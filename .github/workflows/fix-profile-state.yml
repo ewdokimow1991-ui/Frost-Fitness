@@ -1,0 +1,31 @@
+name: Fix profile Compose state
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-profile-state.yml'
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Make Profile observable
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('app/src/main/java/com/frostfitness/app/MainActivity.kt')
+          s=p.read_text()
+          old='data class Profile(var goal:String="",var age:String="",var height:String="",var weight:String="",var experience:String="",var days:Int=3,var place:String="Зал",var health:String="")'
+          new='class Profile { var goal by mutableStateOf(""); var age by mutableStateOf(""); var height by mutableStateOf(""); var weight by mutableStateOf(""); var experience by mutableStateOf(""); var days by mutableIntStateOf(3); var place by mutableStateOf("Зал"); var health by mutableStateOf("") }'
+          if old not in s:
+              raise SystemExit('Expected Profile declaration not found')
+          p.write_text(s.replace(old,new,1))
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/src/main/java/com/frostfitness/app/MainActivity.kt
+          git commit -m 'Fix Compose profile input state'
+          git push
