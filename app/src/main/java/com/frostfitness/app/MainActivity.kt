@@ -3,7 +3,10 @@ package com.frostfitness.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,23 +14,26 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.sin
 
 private val Lime=Color(0xFFB7FF32); private val Bg=Color(0xFF090B0A); private val Card=Color(0xFF151816); private val Muted=Color(0xFFA8AEA9)
 data class Profile(var goal:String="",var age:String="",var height:String="",var weight:String="",var experience:String="",var days:Int=3,var place:String="Зал",var health:String="")
 data class Exercise(val name:String,val dose:String)
 data class Workout(val name:String,val exercises:List<Exercise>)
 data class Food(val name:String,val kcal:Int,val p:Int,val c:Int,val f:Int)
-enum class Screen{WELCOME,GOAL,BASICS,EXP,DAYS,PLACE,HEALTH,HOME,WORKOUT,FOOD,PROGRESS,PROFILE}
+enum class Screen{WELCOME,GOAL,BASICS,EXP,DAYS,PLACE,HEALTH,HOME,WORKOUT,EXERCISE,FOOD,PROGRESS,PROFILE}
 class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.onCreate(b);setContent{App()}}}
 
 @Composable fun App(){
- var s by remember{mutableStateOf(Screen.WELCOME)};val p=remember{Profile()};var chosen by remember{mutableStateOf<Workout?>(null)};var completed by remember{mutableStateOf(0)};var foods by remember{mutableStateOf(listOf<Food>())}
+ var s by remember{mutableStateOf(Screen.WELCOME)};val p=remember{Profile()};var chosen by remember{mutableStateOf<Workout?>(null)};var exercise by remember{mutableStateOf<Exercise?>(null)};var completed by remember{mutableStateOf(0)};var foods by remember{mutableStateOf(listOf<Food>())}
  MaterialTheme(colorScheme=darkColorScheme(primary=Lime,background=Bg,surface=Card,onPrimary=Color.Black,onBackground=Color.White,onSurface=Color.White)){Surface(Modifier.fillMaxSize(),color=Bg){when(s){
-  Screen.WELCOME->Page("Frost Fitness","Тренировки, питание и прогресс в одном приложении."){Info("FF создаёт программу по твоей цели, опыту, оборудованию и ограничениям здоровья.");Go("Создать программу"){s=Screen.GOAL}}
+  Screen.WELCOME->Page("Frost Fitness","Фростик — твой тренер по технике движений."){Info("FF создаёт программу по твоей цели, опыту, оборудованию и ограничениям здоровья.");Go("Создать программу"){s=Screen.GOAL}}
   Screen.GOAL->Select("Твоя цель",listOf("Снизить вес","Набрать мышцы","Стать сильнее","Поддерживать форму"),p.goal,{p.goal=it}){s=Screen.BASICS}
   Screen.BASICS->Page("Основные данные","Для персонализации и отслеживания прогресса."){Input("Возраст",p.age){p.age=it};Input("Рост, см",p.height){p.height=it};Input("Вес, кг",p.weight){p.weight=it};Go("Продолжить",p.age.isNotBlank()&&p.height.isNotBlank()&&p.weight.isNotBlank()){s=Screen.EXP}}
   Screen.EXP->Select("Опыт тренировок",listOf("Начинающий","Есть опыт","Продвинутый"),p.experience,{p.experience=it}){s=Screen.DAYS}
@@ -35,7 +41,8 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
   Screen.PLACE->Select("Где тренируемся?",listOf("Зал","Дом: гантели","Дом: без оборудования"),p.place,{p.place=it}){s=Screen.HEALTH}
   Screen.HEALTH->Page("Здоровье и ограничения","Обязательный шаг перед созданием программы."){Info("Укажи заболевания, травмы, медицинские ограничения, противопоказания и движения, которые вызывают боль. FF не ставит диагноз и не заменяет врача.");OutlinedTextField(p.health,{p.health=it},label={Text("Что нужно учитывать?")},placeholder={Text("Если ограничений нет — напиши «Нет»")},minLines=5,modifier=Modifier.fillMaxWidth());Go("Создать программу",p.health.isNotBlank()){s=Screen.HOME}}
   Screen.HOME->Home(p,completed,{chosen=it;s=Screen.WORKOUT},{s=Screen.FOOD},{s=Screen.PROGRESS},{s=Screen.PROFILE})
-  Screen.WORKOUT->WorkoutPage(chosen?:plan(p).first(),{completed++;s=Screen.HOME}){s=Screen.HOME}
+  Screen.WORKOUT->WorkoutPage(chosen?:plan(p).first(),{completed++;s=Screen.HOME},{exercise=it;s=Screen.EXERCISE}){s=Screen.HOME}
+  Screen.EXERCISE->ExerciseCoach(exercise?:plan(p).first().exercises.first()){s=Screen.WORKOUT}
   Screen.FOOD->FoodPage(p,foods,{foods=foods+it}){s=Screen.HOME}
   Screen.PROGRESS->ProgressPage(p,completed){s=Screen.HOME}
   Screen.PROFILE->ProfilePage(p){s=Screen.HOME}
@@ -47,12 +54,23 @@ fun plan(p:Profile):List<Workout>{val gym=listOf(Exercise("Жим ногами",
 @Composable fun Info(t:String){Column(Modifier.fillMaxWidth().background(Card,RoundedCornerShape(20.dp)).padding(18.dp)){Text(t,lineHeight=21.sp)}}
 @Composable fun Go(text:String="Продолжить",enabled:Boolean=true,click:()->Unit){Button(click,Modifier.fillMaxWidth().height(56.dp),enabled=enabled,shape=RoundedCornerShape(16.dp),colors=ButtonDefaults.buttonColors(containerColor=Lime,contentColor=Color.Black)){Text(text,fontWeight=FontWeight.Bold)}}
 @Composable fun Input(label:String,value:String,set:(String)->Unit){OutlinedTextField(value,set,label={Text(label)},singleLine=true,modifier=Modifier.fillMaxWidth())}
-@Composable fun Select(title:String,items:List<String>,value:String,set:(String)->Unit,next:()->Unit)=Page(title){items.forEach{FilterChip(value==it,{set(it)},{Text(it)},modifier=Modifier.fillMaxWidth())};Go(enabled=value.isNotBlank(),click=next)}
+@Composable fun Select(title:String,items:List<String>,initial:String,set:(String)->Unit,next:()->Unit){var selected by remember(title){mutableStateOf(initial)};Page(title){items.forEach{item->FilterChip(selected=selected==item,onClick={selected=item;set(item)},label={Text(item)},modifier=Modifier.fillMaxWidth())};Go(enabled=selected.isNotBlank(),click=next)}}
 
 @Composable fun Home(p:Profile,completed:Int,start:(Workout)->Unit,food:()->Unit,progress:()->Unit,profile:()->Unit)=Page("Сегодня","${p.goal} • ${p.days}× в неделю"){
- Info("Программа сформирована по анкете. Если указаны ограничения здоровья, выполняй упражнения только в рамках рекомендаций врача и без боли.");plan(p).forEach{w->Column(Modifier.fillMaxWidth().background(Card,RoundedCornerShape(18.dp)).padding(16.dp)){Text(w.name,fontWeight=FontWeight.Bold);Text("${w.exercises.size} упражнений",color=Muted);Button({start(w)},colors=ButtonDefaults.buttonColors(containerColor=Lime,contentColor=Color.Black)){Text("Начать")}}};Text("Завершено тренировок: $completed",color=Muted);Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){OutlinedButton(food,Modifier.weight(1f)){Text("Питание",fontSize=11.sp)};OutlinedButton(progress,Modifier.weight(1f)){Text("Прогресс",fontSize=11.sp)};OutlinedButton(profile,Modifier.weight(1f)){Text("Профиль",fontSize=11.sp)}}
+ Info("Фростик покажет технику каждого движения. Нажми на упражнение во время тренировки, чтобы открыть демонстрацию.");plan(p).forEach{w->Column(Modifier.fillMaxWidth().background(Card,RoundedCornerShape(18.dp)).padding(16.dp)){Text(w.name,fontWeight=FontWeight.Bold);Text("${w.exercises.size} упражнений",color=Muted);Button({start(w)},colors=ButtonDefaults.buttonColors(containerColor=Lime,contentColor=Color.Black)){Text("Начать")}}};Text("Завершено тренировок: $completed",color=Muted);Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){OutlinedButton(food,Modifier.weight(1f)){Text("Питание",fontSize=11.sp)};OutlinedButton(progress,Modifier.weight(1f)){Text("Прогресс",fontSize=11.sp)};OutlinedButton(profile,Modifier.weight(1f)){Text("Профиль",fontSize=11.sp)}}
 }
-@Composable fun WorkoutPage(w:Workout,finish:()->Unit,back:()->Unit)=Page(w.name,"Отмечай выполненные упражнения."){var done by remember(w.name){mutableStateOf(setOf<Int>())};w.exercises.forEachIndexed{i,e->Row(Modifier.fillMaxWidth().background(Card,RoundedCornerShape(16.dp)).padding(14.dp),horizontalArrangement=Arrangement.SpaceBetween){Column{Text(e.name,fontWeight=FontWeight.Bold);Text(e.dose,color=Lime)};Checkbox(i in done,{done=if(it)done+i else done-i})}};Text("Отдых 60–120 сек. Остановись при боли, головокружении или необычных симптомах.",color=Muted);Go("Завершить",done.size==w.exercises.size,finish);OutlinedButton(back,Modifier.fillMaxWidth()){Text("Назад")}}
+@Composable fun WorkoutPage(w:Workout,finish:()->Unit,show:(Exercise)->Unit,back:()->Unit)=Page(w.name,"Нажми на упражнение — Фростик покажет движение."){var done by remember(w.name){mutableStateOf(setOf<Int>())};w.exercises.forEachIndexed{i,e->Row(Modifier.fillMaxWidth().background(Card,RoundedCornerShape(16.dp)).clickable{show(e)}.padding(14.dp),horizontalArrangement=Arrangement.SpaceBetween){Column(Modifier.weight(1f)){Text(e.name,fontWeight=FontWeight.Bold);Text(e.dose,color=Lime);Text("Фростик: показать технику ›",color=Muted,fontSize=12.sp)};Checkbox(i in done,{done=if(it)done+i else done-i})}};Text("Отдых 60–120 сек. Остановись при боли, головокружении или необычных симптомах.",color=Muted);Go("Завершить",done.size==w.exercises.size,finish);OutlinedButton(back,Modifier.fillMaxWidth()){Text("Назад")}}
+
+@Composable fun ExerciseCoach(e:Exercise,back:()->Unit)=Page(e.name,"${e.dose} • Фростик показывает технику"){
+ FrostikMotion(e.name);Info(technique(e.name));Text("Смотри полный цикл движения несколько раз перед подходом. Двигайся подконтрольно и без боли.",color=Muted);OutlinedButton(back,Modifier.fillMaxWidth()){Text("Вернуться к тренировке")}
+}
+fun technique(n:String)=when(n){"Присед к стулу","Жим ногами"->"Стопы устойчиво. Колени идут по направлению носков. Опускайся подконтрольно, не округляя спину.";"Отжимания от опоры","Жим от груди"->"Корпус стабилен. Лопатки контролируй, локти не разводи резко в стороны. Выжимай без рывка.";"Тяга верхнего блока"->"Грудь слегка вверх. Тяни локти вниз, не раскачивай корпус. Возвращай вес подконтрольно.";"Ягодичный мост"->"Стопы устойчиво. Подними таз за счёт ягодиц, сохраняя нейтральную поясницу. Вверху короткая пауза.";"Планка"->"Держи тело одной линией, живот и ягодицы напряжены. Не проваливай поясницу.";else->"Держи корпус стабильно, выполняй движение плавно и в комфортной амплитуде."}
+
+@Composable fun FrostikMotion(exercise:String){
+ val tr=rememberInfiniteTransition(label="frostik");val phase by tr.animateFloat(0f,1f,infiniteRepeatable(tween(1600,easing=FastOutSlowInEasing),RepeatMode.Reverse),label="phase")
+ Column(Modifier.fillMaxWidth().background(Card,RoundedCornerShape(22.dp)).padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)){Text("ФРОСТИК • ДЕМОНСТРАЦИЯ",color=Lime,fontWeight=FontWeight.Bold);Canvas(Modifier.fillMaxWidth().height(250.dp)){val w=size.width;val h=size.height;val squat=if(exercise.contains("Присед")||exercise.contains("ногами")) phase else 0f;val push=if(exercise.contains("Отжим")||exercise.contains("груди")) phase else 0f;val bridge=if(exercise.contains("мост")) phase else 0f;val bob=sin(phase*3.14159f)*8f;val cx=w*.5f;val hipY=h*.60f+sq*0f;val body=Color(0xFFE9EEF0);val skin=Color(0xFFFFC9A8);val dark=Color(0xFF202522);val yHip=hipY+sq*45f-bridge*30f;val yShoulder=h*.35f+sq*35f+push*18f-bridge*12f;drawCircle(skin,28f,Offset(cx,yShoulder-48f+bob));drawArc(dark,190f,160f,false,Offset(cx-30f,yShoulder-82f+bob),androidx.compose.ui.geometry.Size(60f,45f),style=androidx.compose.ui.graphics.drawscope.Stroke(10f,cap=StrokeCap.Round));drawLine(body,Offset(cx,yShoulder-18f),Offset(cx,yHip),22f,StrokeCap.Round);val armSpread=55f+push*25f;drawLine(skin,Offset(cx,yShoulder),Offset(cx-armSpread,yShoulder+55f-push*25f),14f,StrokeCap.Round);drawLine(skin,Offset(cx,yShoulder),Offset(cx+armSpread,yShoulder+55f-push*25f),14f,StrokeCap.Round);val kneeY=h*.76f+sq*18f;drawLine(body,Offset(cx-8f,yHip),Offset(cx-45f,kneeY),18f,StrokeCap.Round);drawLine(body,Offset(cx+8f,yHip),Offset(cx+45f,kneeY),18f,StrokeCap.Round);drawLine(body,Offset(cx-45f,kneeY),Offset(cx-68f,h*.91f),16f,StrokeCap.Round);drawLine(body,Offset(cx+45f,kneeY),Offset(cx+68f,h*.91f),16f,StrokeCap.Round);drawCircle(Lime,5f,Offset(cx-10f,yShoulder-52f+bob));drawCircle(Lime,5f,Offset(cx+10f,yShoulder-52f+bob))};Text("Анимация повторяется автоматически",color=Muted,fontSize=12.sp)}
+}
+
 fun calories(p:Profile):Int{val kg=p.weight.replace(',','.').toDoubleOrNull()?:70.0;return when(p.goal){"Снизить вес"->(kg*27).toInt();"Набрать мышцы"->(kg*35).toInt();else->(kg*31).toInt()}.coerceIn(1400,4000)}
 @Composable fun FoodPage(p:Profile,foods:List<Food>,add:(Food)->Unit,back:()->Unit)=Page("Питание","Ориентировочный дневник питания."){val target=calories(p);val used=foods.sumOf{it.kcal};Info("$used / $target ккал\nБелки ${foods.sumOf{it.p}} г • Жиры ${foods.sumOf{it.f}} г • Углеводы ${foods.sumOf{it.c}} г");listOf(Food("Завтрак",450,25,50,15),Food("Основной приём",650,40,70,20),Food("Перекус",250,15,30,8)).forEach{f->OutlinedButton({add(f)},Modifier.fillMaxWidth()){Text("+ ${f.name} • ${f.kcal} ккал")}};Text("Калорийность — ориентир, не лечебная диета. При медицинских состояниях питание согласовывается со специалистом.",color=Muted,fontSize=13.sp);OutlinedButton(back,Modifier.fillMaxWidth()){Text("Назад")}}
 @Composable fun ProgressPage(p:Profile,completed:Int,back:()->Unit)=Page("Прогресс"){Info("$completed завершённых тренировок");Info("Текущий вес: ${p.weight} кг\nЦель: ${p.goal}");Text("Оценивай тренд за несколько недель, а не одно измерение.",color=Muted);OutlinedButton(back,Modifier.fillMaxWidth()){Text("Назад")}}
