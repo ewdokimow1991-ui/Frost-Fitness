@@ -1,4 +1,4 @@
-name: Fix profile Compose state
+name: Apply persistent Frost Fitness state
 on:
   push:
     paths:
@@ -10,23 +10,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Make Profile observable
+      - name: Persist profile and navigation state
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p=Path('app/src/main/java/com/frostfitness/app/MainActivity.kt')
           s=p.read_text()
-          old='data class Profile(var goal:String="",var age:String="",var height:String="",var weight:String="",var experience:String="",var days:Int=3,var place:String="Зал",var health:String="")'
-          new='class Profile { var goal by mutableStateOf(""); var age by mutableStateOf(""); var height by mutableStateOf(""); var weight by mutableStateOf(""); var experience by mutableStateOf(""); var days by mutableIntStateOf(3); var place by mutableStateOf("Зал"); var health by mutableStateOf("") }'
+          if 'import androidx.compose.ui.platform.LocalContext' not in s:
+              s=s.replace('import androidx.compose.ui.Modifier\n', 'import androidx.compose.ui.Modifier\nimport androidx.compose.ui.platform.LocalContext\n', 1)
+          old='@Composable fun App(){var s by remember{mutableStateOf(Screen.WELCOME)};val p=remember{Profile()};var chosen by remember{mutableStateOf<Workout?>(null)};var exercise by remember{mutableStateOf<Exercise?>(null)};var completed by remember{mutableStateOf(0)};var foods by remember{mutableStateOf(listOf<Food>())};MaterialTheme'
+          new='@Composable fun App(){val context=LocalContext.current;val p=remember{loadProfile(context)};var s by remember{mutableStateOf(loadScreen(context))};var chosen by remember{mutableStateOf<Workout?>(null)};var exercise by remember{mutableStateOf<Exercise?>(null)};var completed by remember{mutableStateOf(loadCompleted(context))};var foods by remember{mutableStateOf(listOf<Food>())};LaunchedEffect(s,p.goal,p.age,p.height,p.weight,p.experience,p.days,p.place,p.health,completed){saveAppState(context,p,s,completed)};MaterialTheme'
           if old not in s:
-              raise SystemExit('Expected Profile declaration not found')
-          p.write_text(s.replace(old,new,1))
+              if 'loadProfile(context)' in s:
+                  print('Persistence patch already present')
+              else:
+                  raise SystemExit('App state declaration not found')
+          else:
+              s=s.replace(old,new,1)
+          p.write_text(s)
           PY
-      - name: Commit fix
+      - name: Commit persistence fix
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add app/src/main/java/com/frostfitness/app/MainActivity.kt
-          git commit -m 'Fix Compose profile input state'
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Persist profile and restore app state'
           git push
-# trigger
+# persistence-v2
