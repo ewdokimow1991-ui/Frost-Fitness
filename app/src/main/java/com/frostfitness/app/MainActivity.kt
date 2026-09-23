@@ -55,7 +55,6 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
    Screen.PLACE->PlaceScreen(p){screen=if(p.place=="Дом")Screen.EQUIPMENT else Screen.HEALTH}; Screen.EQUIPMENT->EquipmentScreen(p){screen=Screen.HEALTH}; Screen.HEALTH->HealthScreen(p){screen=Screen.HOME}; Screen.HOME->Home(p){screen=Screen.PROFILE}; Screen.PROFILE->ProfilePage(p,mode,{mode=it},measurements,{measurements=measurements+it}){screen=Screen.HOME}
   }
  }}}
-}
 
 @Composable fun Welcome(next:()->Unit)=Page("Добро пожаловать\nв Frost Fitness","Твой персональный путь к форме начинается здесь."){Card{Text("🏋️  ФРОСТИК  🏋️",fontSize=30.sp,fontWeight=FontWeight.Bold);Text("Помогу настроить тренировки и следить за прогрессом.",color=UiSub)};Primary("Заполнить анкету",click=next)}
 @Composable fun ThemePick(mode:ThemeMode,set:(ThemeMode)->Unit,next:()->Unit)=Page("Выбери оформление"){Select("Светлая тема",mode==ThemeMode.LIGHT){set(ThemeMode.LIGHT)};Select("Как на телефоне",mode==ThemeMode.SYSTEM){set(ThemeMode.SYSTEM)};Select("Тёмная тема",mode==ThemeMode.DARK){set(ThemeMode.DARK)};Primary(click=next)}
