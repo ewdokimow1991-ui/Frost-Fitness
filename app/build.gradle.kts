@@ -8,12 +8,26 @@ android {
     namespace = "com.frostfitness.app"
     compileSdk = 36
 
+    signingConfigs {
+        create("frostRelease") {
+            storeFile = file("frost-fitness.jks")
+            storePassword = "frostfitness2026"
+            keyAlias = "frost"
+            keyPassword = "frostfitness2026"
+        }
+    }
+
     defaultConfig {
         applicationId = "com.frostfitness.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
+    }
+
+    buildTypes {
+        debug { signingConfig = signingConfigs.getByName("frostRelease") }
+        release { signingConfig = signingConfigs.getByName("frostRelease") }
     }
 
     buildFeatures { compose = true }
