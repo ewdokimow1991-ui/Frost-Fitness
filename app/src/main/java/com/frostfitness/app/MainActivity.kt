@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.sp
 import kotlin.math.sin
 
 private val Lime=Color(0xFFB7FF32); private val Bg=Color(0xFF090B0A); private val Card=Color(0xFF151816); private val Muted=Color(0xFFA8AEA9)
-data class Profile(var goal:String="",var age:String="",var height:String="",var weight:String="",var experience:String="",var days:Int=3,var place:String="Зал",var health:String="")
+class Profile { var goal by mutableStateOf(""); var age by mutableStateOf(""); var height by mutableStateOf(""); var weight by mutableStateOf(""); var experience by mutableStateOf(""); var days by mutableIntStateOf(3); var place by mutableStateOf("Зал"); var health by mutableStateOf("") }
 data class Exercise(val name:String,val dose:String)
 data class Workout(val name:String,val exercises:List<Exercise>)
 data class Food(val name:String,val kcal:Int,val p:Int,val c:Int,val f:Int)
