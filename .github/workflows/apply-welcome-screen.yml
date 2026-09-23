@@ -1,0 +1,42 @@
+name: Apply approved welcome screen
+
+on:
+  push:
+    paths:
+      - 'welcome.webp.b64'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply welcome screen
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f welcome.webp.b64
+          mkdir -p app/src/main/res/drawable-nodpi
+          base64 -d welcome.webp.b64 > app/src/main/res/drawable-nodpi/welcome.webp
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('app/src/main/java/com/frostfitness/app/MainActivity.kt')
+          s=p.read_text()
+          old='@Composable fun Welcome(next:()->Unit)=Page("Добро пожаловать\\nв Frost Fitness","Твой персональный путь к форме начинается здесь."){Card{Text("Фростик — твой спортивный помощник",fontSize=24.sp,fontWeight=FontWeight.Bold);Text("Помогу настроить тренировки и следить за прогрессом.",color=UiSub)};Primary("Заполнить анкету",click=next)}'
+          new='''@Composable fun Welcome(next:()->Unit){\n Box(Modifier.fillMaxSize().background(Color.Black)){\n  AndroidView(factory={ctx->ImageView(ctx).apply{scaleType=ImageView.ScaleType.CENTER_CROP;setImageResource(R.drawable.welcome)}},modifier=Modifier.fillMaxSize())\n  Box(Modifier.align(Alignment.BottomCenter).padding(start=34.dp,end=34.dp,bottom=138.dp).fillMaxWidth().height(78.dp).clickable{next()})\n }\n}'''
+          if old not in s:
+              raise SystemExit('Expected Welcome function not found; refusing unsafe edit')
+          p.write_text(s.replace(old,new,1))
+          PY
+          rm welcome.webp.b64
+      - name: Commit result
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Apply approved Frost Fitness welcome screen'
+          git push
