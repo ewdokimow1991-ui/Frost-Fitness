@@ -6,9 +6,8 @@ plugins {
 android {
     namespace = "com.frostfitness.app"
     compileSdk = 36
-    signingConfigs { create("frostRelease") { storeFile = file("frost-fitness.jks"); storePassword = "frostfitness2026"; keyAlias = "frost"; keyPassword = "frostfitness2026" } }
-    defaultConfig { applicationId = "com.frostfitness.app"; minSdk = 26; targetSdk = 36; versionCode = 6; versionName = "0.6.0" }
-    buildTypes { debug { signingConfig = signingConfigs.getByName("frostRelease") }; release { signingConfig = signingConfigs.getByName("frostRelease") } }
+    defaultConfig { applicationId = "com.frostfitness.app"; minSdk = 26; targetSdk = 36; versionCode = 9; versionName = "0.8.1" }
+    buildTypes { }
     buildFeatures { compose = true }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = "17" }
