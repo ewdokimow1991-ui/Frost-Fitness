@@ -20,8 +20,9 @@ jobs:
       - name: Restore approved welcome artwork
         run: |
           mkdir -p app/src/main/res/drawable-nodpi
-          base64 -d welcome.part001.b64 > app/src/main/res/drawable-nodpi/welcome.webp
+          tr -d '\r\n ' < welcome.part001.b64 | base64 --decode > app/src/main/res/drawable-nodpi/welcome.webp
           test -s app/src/main/res/drawable-nodpi/welcome.webp
+          file app/src/main/res/drawable-nodpi/welcome.webp
       - name: Restore stable signing key
         run: base64 -d app/signing-key.b64 > app/frost-fitness.jks
       - run: gradle :app:assembleDebug --stacktrace
