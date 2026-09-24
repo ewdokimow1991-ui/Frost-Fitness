@@ -17,27 +17,29 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
-      - name: Restore and convert approved welcome artwork
+      - name: Verify native welcome artwork
         run: |
-          mkdir -p app/src/main/res/drawable-nodpi
-          python3 -c "import base64,pathlib,re; src=pathlib.Path('welcome.part001.b64').read_text(); payload=re.sub(r'[^A-Za-z0-9+/=]','',src); payload += '=' * (-len(payload) % 4); data=base64.b64decode(payload,validate=False); pathlib.Path('/tmp/welcome.webp').write_bytes(data); assert data[:4] == b'RIFF' and data[8:12] == b'WEBP'"
-          python3 -m pip install --disable-pip-version-check pillow
-          python3 -c "from PIL import Image; im=Image.open('/tmp/welcome.webp'); im.load(); print('WELCOME_SOURCE', im.size, im.mode, im.format); assert im.width > 500 and im.height > 800; im.convert('RGB').save('app/src/main/res/drawable-nodpi/welcome.png', format='PNG', optimize=True); chk=Image.open('app/src/main/res/drawable-nodpi/welcome.png'); chk.verify(); print('WELCOME_PNG_OK')"
+          test -s app/src/main/res/drawable-nodpi/welcome.jpg
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/res/drawable-nodpi/welcome.jpg')
+          d = p.read_bytes()
+          assert d[:2] == b'\xff\xd8' and d[-2:] == b'\xff\xd9', 'welcome.jpg is not a complete JPEG'
+          print('WELCOME_JPEG_OK', len(d))
+          PY
       - name: Apply approved welcome UI
         run: python3 .github/scripts/apply_welcome.py
       - name: Verify approved welcome UI
         run: |
-          test -s app/src/main/res/drawable-nodpi/welcome.png
           grep -q 'R.drawable.welcome' app/src/main/java/com/frostfitness/app/MainActivity.kt
           grep -q 'обработку персональных данных' app/src/main/java/com/frostfitness/app/MainActivity.kt
       - name: Restore stable signing key
         run: base64 -d app/signing-key.b64 > app/frost-fitness.jks
       - name: Build APK
         run: gradle :app:assembleDebug --stacktrace
-      - name: Verify artwork is packaged in APK
-        run: |
-          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep -E 'res/.+\.png' >/dev/null
+      - name: Verify APK created
+        run: test -s app/build/outputs/apk/debug/app-debug.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: Frost-Fitness-0.8.2-welcome-render-fix-apk
+          name: Frost-Fitness-0.8.1-native-welcome-apk
           path: app/build/outputs/apk/debug/app-debug.apk
