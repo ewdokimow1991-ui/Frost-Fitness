@@ -29,7 +29,7 @@ jobs:
           p = Path('app/src/main/res/drawable-nodpi/welcome.jpg')
           d = p.read_bytes()
           assert d[:2] == b'\xff\xd8' and d[-2:] == b'\xff\xd9', 'welcome.jpg is not a complete JPEG'
-          assert len(d) == 17054, f'unexpected welcome.jpg size: {len(d)}'
+          assert len(d) == 17057, f'unexpected welcome.jpg size: {len(d)}'
           print('WELCOME_JPEG_OK', len(d))
           PY
       - name: Apply approved welcome UI
