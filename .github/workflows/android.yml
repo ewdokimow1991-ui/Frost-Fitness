@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -20,7 +20,18 @@ jobs:
       - name: Restore approved welcome artwork
         run: |
           mkdir -p app/src/main/res/drawable-nodpi
-          tr -d '\r\n ' < welcome.part001.b64 | base64 --decode > app/src/main/res/drawable-nodpi/welcome.webp
+          python3 - <<'PY'
+          import base64, pathlib, re
+          src = pathlib.Path('welcome.part001.b64').read_text(encoding='utf-8')
+          payload = re.sub(r'[^A-Za-z0-9+/=]', '', src)
+          payload += '=' * (-len(payload) % 4)
+          data = base64.b64decode(payload, validate=False)
+          out = pathlib.Path('app/src/main/res/drawable-nodpi/welcome.webp')
+          out.write_bytes(data)
+          if not data.startswith(b'RIFF') or data[8:12] != b'WEBP':
+              raise SystemExit('welcome artwork is not a valid WebP payload')
+          print(f'Restored {len(data)} bytes to {out}')
+          PY
           test -s app/src/main/res/drawable-nodpi/welcome.webp
           file app/src/main/res/drawable-nodpi/welcome.webp
       - name: Restore stable signing key
