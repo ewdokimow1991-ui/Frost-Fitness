@@ -19,14 +19,17 @@ jobs:
           gradle-version: '8.13'
       - name: Reconstruct approved welcome artwork
         run: |
+          test -s .github/welcome_chunks/welcome_001.b64
+          test -s .github/welcome_chunks/welcome_002.b64
+          test -s .github/welcome_chunks/welcome_003.b64
           mkdir -p app/src/main/res/drawable-nodpi
-          cat .github/welcome_chunks/welcome_*.b64 | tr -d '\r\n' | base64 -d > app/src/main/res/drawable-nodpi/welcome.jpg
+          cat .github/welcome_chunks/welcome_001.b64 .github/welcome_chunks/welcome_002.b64 .github/welcome_chunks/welcome_003.b64 | tr -d '\r\n' | base64 -d > app/src/main/res/drawable-nodpi/welcome.jpg
           python3 - <<'PY'
           from pathlib import Path
           p = Path('app/src/main/res/drawable-nodpi/welcome.jpg')
           d = p.read_bytes()
           assert d[:2] == b'\xff\xd8' and d[-2:] == b'\xff\xd9', 'welcome.jpg is not a complete JPEG'
-          assert len(d) == 56125, f'unexpected welcome.jpg size: {len(d)}'
+          assert len(d) == 17054, f'unexpected welcome.jpg size: {len(d)}'
           print('WELCOME_JPEG_OK', len(d))
           PY
       - name: Apply approved welcome UI
