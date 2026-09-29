@@ -10,7 +10,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -24,8 +26,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -63,7 +68,114 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
   }
  }}}
 
-@Composable fun Welcome(next:()->Unit)=Page("Добро пожаловать\nв Frost Fitness","Твой персональный путь к форме начинается здесь."){Card{Text("Фростик — твой спортивный помощник",fontSize=24.sp,fontWeight=FontWeight.Bold);Text("Помогу настроить тренировки и следить за прогрессом.",color=UiSub)};Primary("Заполнить анкету",click=next)}
+@Composable fun Welcome(next:()->Unit){
+ BoxWithConstraints(
+  Modifier.fillMaxSize()
+   .background(Brush.verticalGradient(listOf(Color(0xFF08090B),Color(0xFF111214),Color.Black)))
+   .statusBarsPadding().navigationBarsPadding()
+ ){
+  val wide=maxWidth>=700.dp
+  if(wide){
+   Row(
+    Modifier.fillMaxSize().padding(horizontal=40.dp,vertical=28.dp),
+    horizontalArrangement=Arrangement.spacedBy(28.dp),
+    verticalAlignment=Alignment.CenterVertically
+   ){
+    WelcomeInfo(Modifier.weight(0.95f),next)
+    WelcomeVisual(Modifier.weight(1.05f).fillMaxHeight())
+   }
+  }else{
+   Column(
+    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal=20.dp),
+    verticalArrangement=Arrangement.spacedBy(16.dp)
+   ){
+    Spacer(Modifier.height(8.dp))
+    WelcomeInfo(Modifier.fillMaxWidth(),next,showButton=false)
+    WelcomeVisual(Modifier.fillMaxWidth().heightIn(min=300.dp,max=390.dp))
+    Primary("Заполнить анкету →",click=next)
+    WelcomeConsent()
+    Spacer(Modifier.height(18.dp))
+   }
+  }
+ }
+}
+
+@Composable fun WelcomeInfo(modifier:Modifier=Modifier,next:()->Unit,showButton:Boolean=true){
+ Column(modifier,verticalArrangement=Arrangement.spacedBy(16.dp)){
+  Column(verticalArrangement=Arrangement.spacedBy(0.dp)){
+   Text("FROST",fontSize=34.sp,fontWeight=FontWeight.Black,color=Color.White)
+   Text("FITNESS",fontSize=16.sp,fontWeight=FontWeight.Bold,color=Color.White)
+  }
+  Text("Добро пожаловать\nв Frost Fitness",fontSize=38.sp,lineHeight=42.sp,fontWeight=FontWeight.Black,color=Color.White)
+  Text("Твой персональный путь\nк форме начинается здесь.",fontSize=18.sp,lineHeight=24.sp,color=Color(0xFFD1D1D6))
+  WelcomeGlassCard()
+  if(showButton){
+   Spacer(Modifier.height(4.dp))
+   Primary("Заполнить анкету →",click=next)
+   WelcomeConsent()
+  }
+ }
+}
+
+@Composable fun WelcomeGlassCard(){
+ Column(
+  Modifier.fillMaxWidth()
+   .background(Color(0x991C1C1E),RoundedCornerShape(22.dp))
+   .border(1.dp,Color.White.copy(alpha=.28f),RoundedCornerShape(22.dp))
+   .padding(18.dp),
+  verticalArrangement=Arrangement.spacedBy(12.dp)
+ ){
+  Text("Фростик — твой\nспортивный помощник",fontSize=23.sp,lineHeight=27.sp,fontWeight=FontWeight.Bold,color=Color.White)
+  Text("Планы, тренировки, питание\nи мотивация в одном приложении.",fontSize=15.sp,lineHeight=20.sp,color=Color(0xFFD1D1D6))
+  Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){
+   WelcomeFeature("⌁","Тренировки",Color(0xFF71F35B))
+   WelcomeFeature("▥","Прогресс",Color(0xFF7A6CFF))
+   WelcomeFeature("♡","Мотивация",Color(0xFFFF6B7D))
+  }
+ }
+}
+
+@Composable fun WelcomeFeature(icon:String,label:String,color:Color){
+ Column(horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(5.dp)){
+  Text(icon,fontSize=27.sp,fontWeight=FontWeight.Bold,color=color)
+  Text(label,fontSize=12.sp,color=Color.White)
+ }
+}
+
+@Composable fun WelcomeVisual(modifier:Modifier=Modifier){
+ Box(
+  modifier.clip(RoundedCornerShape(28.dp))
+   .background(Color(0xFF141416))
+   .border(1.dp,Color.White.copy(alpha=.16f),RoundedCornerShape(28.dp))
+ ){
+  Image(
+   painter=painterResource(R.drawable.welcome),
+   contentDescription="Фростик",
+   contentScale=ContentScale.Crop,
+   alignment=Alignment.BottomEnd,
+   modifier=Modifier.fillMaxSize()
+  )
+  Box(
+   Modifier.fillMaxSize().background(
+    Brush.verticalGradient(
+     listOf(Color.Black.copy(alpha=.12f),Color.Transparent,Color.Black.copy(alpha=.30f))
+    )
+   )
+  )
+  Text(
+   "ВМЕСТЕ\nК ЛУЧШЕЙ\nВЕРСИИ ТЕБЯ!",
+   color=Color.White,fontSize=15.sp,lineHeight=17.sp,fontWeight=FontWeight.Black,
+   modifier=Modifier.align(Alignment.TopEnd).padding(16.dp)
+  )
+ }
+}
+
+@Composable fun WelcomeConsent(){
+ Text(
+  "Нажимая «Заполнить анкету», вы соглашаетесь на обработку персональных данных в соответствии с Политикой конфиденциальности.",
+  color=Color(0xFF98989D),fontSize=11.sp,lineHeight=15.sp
+ )
+}
 @Composable fun ThemePick(mode:ThemeMode,set:(ThemeMode)->Unit,next:()->Unit)=Page("Выбери оформление"){Select("Светлая тема",mode==ThemeMode.LIGHT){set(ThemeMode.LIGHT)};Select("Как на телефоне",mode==ThemeMode.SYSTEM){set(ThemeMode.SYSTEM)};Select("Тёмная тема",mode==ThemeMode.DARK){set(ThemeMode.DARK)};Primary(click=next)}
 
 @Composable fun PhotoPicker(uri:String,onPicked:(String)->Unit){val c=LocalContext.current;val launcher=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()){u:Uri?->if(u!=null){runCatching{c.contentResolver.takePersistableUriPermission(u,android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)};onPicked(u.toString())}};Column(horizontalAlignment=Alignment.CenterHorizontally,modifier=Modifier.fillMaxWidth()){if(uri.isNotBlank())UriImage(uri,110);Secondary(if(uri.isBlank())"Добавить фотографию" else "Изменить фотографию"){launcher.launch(arrayOf("image/*"))}}}
