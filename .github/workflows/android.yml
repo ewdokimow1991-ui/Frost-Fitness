@@ -32,12 +32,11 @@ jobs:
           assert len(d) == 17057, f'unexpected welcome.jpg size: {len(d)}'
           print('WELCOME_JPEG_OK', len(d))
           PY
-      - name: Apply approved welcome UI
-        run: python3 .github/scripts/apply_welcome.py
-      - name: Verify approved welcome UI
+      - name: Verify responsive welcome UI
         run: |
+          grep -q 'BoxWithConstraints' app/src/main/java/com/frostfitness/app/MainActivity.kt
+          grep -q 'WelcomeGlassCard' app/src/main/java/com/frostfitness/app/MainActivity.kt
           grep -q 'R.drawable.welcome' app/src/main/java/com/frostfitness/app/MainActivity.kt
-          grep -q 'обработку персональных данных' app/src/main/java/com/frostfitness/app/MainActivity.kt
       - name: Restore stable signing key
         run: base64 -d app/signing-key.b64 > app/frost-fitness.jks
       - name: Build APK
@@ -46,5 +45,5 @@ jobs:
         run: test -s app/build/outputs/apk/debug/app-debug.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: Frost-Fitness-0.8.1-approved-welcome-apk
+          name: Frost-Fitness-0.8.2-responsive-welcome-apk
           path: app/build/outputs/apk/debug/app-debug.apk
