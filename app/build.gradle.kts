@@ -6,7 +6,7 @@ plugins {
 android {
     namespace = "com.frostfitness.app"
     compileSdk = 36
-    defaultConfig { applicationId = "com.frostfitness.app"; minSdk = 26; targetSdk = 36; versionCode = 9; versionName = "0.8.1" }
+    defaultConfig { applicationId = "com.frostfitness.app"; minSdk = 26; targetSdk = 36; versionCode = 10; versionName = "0.8.2" }
     buildTypes { }
     buildFeatures { compose = true }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
