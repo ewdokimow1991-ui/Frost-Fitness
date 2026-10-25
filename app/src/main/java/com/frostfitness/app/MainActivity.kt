@@ -216,7 +216,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
     Primary("Сохранить упражнение",valid){
      val date=java.time.LocalDate.now().toString()
      val entry=listOf(date,exercise,sets,reps,weight).joinToString(" · ")
-     history=if(history.isBlank())entry else entry+"\\n"+history
+     history=if(history.isBlank())entry else entry+"\n"+history
      store.edit().putString("entries",history).apply()
      editing=false
     }
