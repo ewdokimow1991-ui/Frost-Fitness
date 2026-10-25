@@ -34,9 +34,9 @@ jobs:
           PY
       - name: Verify responsive welcome UI
         run: |
-          grep -q 'BoxWithConstraints' app/src/main/java/com/frostfitness/app/MainActivity.kt
+          grep -q 'statusBarsPadding' app/src/main/java/com/frostfitness/app/MainActivity.kt
           grep -q 'WelcomeGlassCard' app/src/main/java/com/frostfitness/app/MainActivity.kt
-          grep -q 'R.drawable.welcome' app/src/main/java/com/frostfitness/app/MainActivity.kt
+          ! grep -q 'R.drawable.welcome' app/src/main/java/com/frostfitness/app/MainActivity.kt
       - name: Restore stable signing key
         run: base64 -d app/signing-key.b64 > app/frost-fitness.jks
       - name: Build APK
@@ -45,5 +45,5 @@ jobs:
         run: test -s app/build/outputs/apk/debug/app-debug.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: Frost-Fitness-0.8.2-responsive-welcome-apk
+          name: Frost-Fitness-native-welcome-fix-apk
           path: app/build/outputs/apk/debug/app-debug.apk
