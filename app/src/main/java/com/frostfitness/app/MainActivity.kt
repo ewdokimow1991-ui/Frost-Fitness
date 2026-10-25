@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.widget.ImageView
+import androidx.activity.compose.BackHandler
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -58,13 +59,36 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
  val c=LocalContext.current; val p=remember{loadProfile(c)}; var screen by remember{mutableStateOf(loadScreen(c))}; var mode by remember{mutableStateOf(loadTheme(c))}; var measurements by remember{mutableStateOf(loadMeasurements(c))}
  val dark=when(mode){ThemeMode.SYSTEM->isSystemInDarkTheme();ThemeMode.LIGHT->false;ThemeMode.DARK->true}; UiBg=if(dark)DarkBg else LightBg;UiCard=if(dark)DarkCard else LightCard;UiInk=if(dark)DarkInk else LightInk;UiSub=if(dark)DarkSub else LightSub
  LaunchedEffect(screen,mode,p.name,p.city,p.about,p.occupation,p.goal,p.age,p.height,p.weight,p.experience,p.days,p.place,p.equipment,p.health,p.photoUri,measurements){save(c,p,screen,mode,measurements)}
+ val previous=when(screen){
+  Screen.WELCOME->null
+  Screen.THEME->Screen.WELCOME
+  Screen.BASICS->Screen.THEME
+  Screen.DETAILS->Screen.BASICS
+  Screen.GOAL->Screen.DETAILS
+  Screen.EXP->Screen.GOAL
+  Screen.DAYS->Screen.EXP
+  Screen.PLACE->Screen.DAYS
+  Screen.EQUIPMENT->Screen.PLACE
+  Screen.HEALTH->if(p.place=="Дом")Screen.EQUIPMENT else Screen.PLACE
+  Screen.HOME->null
+  Screen.PROFILE->Screen.HOME
+ }
+ BackHandler(enabled=previous!=null){previous?.let{screen=it}}
  MaterialTheme(colorScheme=if(dark)darkColorScheme(background=UiBg,surface=UiCard,onBackground=UiInk,onSurface=UiInk) else lightColorScheme(background=UiBg,surface=UiCard,onBackground=UiInk,onSurface=UiInk)){Surface(Modifier.fillMaxSize(),color=UiBg){
+  Box(Modifier.fillMaxSize()){
   when(screen){
    Screen.WELCOME->Welcome{screen=Screen.THEME}; Screen.THEME->ThemePick(mode,{mode=it}){screen=Screen.BASICS}; Screen.BASICS->Basics(p){screen=Screen.DETAILS}; Screen.DETAILS->Details(p){screen=Screen.GOAL}
    Screen.GOAL->Choice("Какая у тебя цель?",listOf("Снизить вес","Набрать мышцы","Стать сильнее","Поддерживать форму"),p.goal,{p.goal=it}){screen=Screen.EXP}
    Screen.EXP->Choice("Опыт тренировок",listOf("Начинающий","До 1 года","1–3 года","Более 3 лет"),p.experience,{p.experience=it}){screen=Screen.DAYS}
    Screen.DAYS->Page("Ритм тренировок","Сколько раз в неделю тебе удобно заниматься?"){Segment((2..5).map{it.toString()},p.days.toString()){p.days=it.toInt()};Primary{screen=Screen.PLACE}}
    Screen.PLACE->PlaceScreen(p){screen=if(p.place=="Дом")Screen.EQUIPMENT else Screen.HEALTH}; Screen.EQUIPMENT->EquipmentScreen(p){screen=Screen.HEALTH}; Screen.HEALTH->HealthScreen(p){screen=Screen.HOME}; Screen.HOME->Home(p){screen=Screen.PROFILE}; Screen.PROFILE->ProfilePage(p,mode,{mode=it},measurements,{measurements=measurements+it}){screen=Screen.HOME}
+  }
+  if(previous!=null){
+   androidx.compose.material3.TextButton(
+    onClick={previous?.let{{screen=it}}?:{}},
+    modifier=Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(end=12.dp,top=4.dp)
+   ){Text("← Назад",color=if(screen==Screen.WELCOME)Color.White else UiInk)}
+  }
   }
  }}}
 
