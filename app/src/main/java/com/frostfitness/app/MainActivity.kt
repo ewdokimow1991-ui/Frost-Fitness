@@ -85,7 +85,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
   }
   if(previous!=null){
    androidx.compose.material3.TextButton(
-    onClick={previous?.let{{screen=it}}?:{}},
+    onClick={screen=previous ?: screen},
     modifier=Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(end=12.dp,top=4.dp)
    ){Text("← Назад",color=if(screen==Screen.WELCOME)Color.White else UiInk)}
   }
