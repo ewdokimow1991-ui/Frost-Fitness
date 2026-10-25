@@ -187,7 +187,49 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
 @Composable fun PlaceScreen(p:Profile,next:()->Unit){var v by remember{mutableStateOf(p.place)};Page("Где тренируемся?","Выбери основное место тренировок."){Select("Зал",v=="Зал"){v="Зал";p.place="Зал";p.equipment=""};Select("Дом",v=="Дом"){v="Дом";p.place="Дом"};Primary(enabled=v.isNotBlank(),click=next)}}
 @Composable fun EquipmentScreen(p:Profile,next:()->Unit){val opts=listOf("Гантели","Штанга и блины","Гири","Резинки","Турник","Скамья","Коврик","Без оборудования");val selected=remember{mutableStateListOf<String>().apply{addAll(p.equipment.split('|').filter{it.isNotBlank()})}};Page("Что есть дома?","Можно выбрать несколько вариантов."){opts.forEach{o->Select(o,o in selected){if(o=="Без оборудования"){selected.clear();selected.add(o)}else{selected.remove("Без оборудования");if(o in selected)selected.remove(o)else selected.add(o)};p.equipment=selected.joinToString("|")}};Primary(enabled=selected.isNotEmpty(),click=next)}}
 @Composable fun HealthScreen(p:Profile,next:()->Unit){var none by remember{mutableStateOf(p.health=="Нет противопоказаний")};Page("Здоровье","Укажи ограничения, которые важно учитывать."){Select("Нет противопоказаний",none){none=true;p.health="Нет противопоказаний"};Field("Ограничения и противопоказания",if(none)"" else p.health,4){none=false;p.health=it};Primary("Завершить анкету",p.health.isNotBlank(),next)}}
-@Composable fun Home(p:Profile,profile:()->Unit)=Page(if(p.name.isBlank())"Сегодня" else "Привет, ${p.name}","${p.goal} · ${p.days} тренировки в неделю"){Card{Text("Тренировка всего тела",fontSize=22.sp,fontWeight=FontWeight.Bold);Text("45 мин · 6 упражнений",color=UiSub);Primary("Начать тренировку"){} };Secondary("Мой профиль и замеры",profile)}
+@Composable fun Home(p:Profile,profile:()->Unit){
+ val context=LocalContext.current
+ val store=remember{context.getSharedPreferences("frost_workout_diary",Context.MODE_PRIVATE)}
+ var exercise by remember{mutableStateOf("Приседания")}
+ var sets by remember{mutableStateOf("3")}
+ var reps by remember{mutableStateOf("10")}
+ var weight by remember{mutableStateOf("0")}
+ var history by remember{mutableStateOf(store.getString("entries","")?:"")}
+ var editing by remember{mutableStateOf(false)}
+ val exercises=listOf("Приседания","Отжимания","Тяга","Жим","Планка","Другое")
+ Page(if(p.name.isBlank())"Сегодня" else "Привет, ${p.name}","${p.goal} · ${p.days} тренировки в неделю"){
+  Card{
+   Text("Дневник тренировок",fontSize=22.sp,fontWeight=FontWeight.Bold)
+   Text("Записывай подходы, повторения и рабочий вес. Данные сохраняются на устройстве.",color=UiSub)
+   Primary(if(editing)"Скрыть форму" else "Записать упражнение"){editing=!editing}
+  }
+  if(editing){
+   Card{
+    Text("Упражнение",fontWeight=FontWeight.Bold)
+    exercises.forEach{option->Select(option,exercise==option){exercise=option}}
+    Num("Подходы",sets){sets=it}
+    Num("Повторения",reps){reps=it}
+    Num("Вес, кг (0 — без отягощения)",weight,true){weight=it}
+    val valid=(sets.toIntOrNull()?:0) in 1..30 &&
+     (reps.toIntOrNull()?:0) in 1..300 &&
+     (weight.toDoubleOrNull()?:-1.0) in 0.0..1000.0
+    Primary("Сохранить упражнение",valid){
+     val date=java.time.LocalDate.now().toString()
+     val entry=listOf(date,exercise,sets,reps,weight).joinToString(" · ")
+     history=if(history.isBlank())entry else entry+"\n"+history
+     store.edit().putString("entries",history).apply()
+     editing=false
+    }
+   }
+  }
+  Card{
+   Text("История упражнений",fontSize=20.sp,fontWeight=FontWeight.Bold)
+   if(history.isBlank())Text("Записей пока нет.",color=UiSub)
+   else history.lines().take(30).forEach{line->Text(line,color=UiInk)}
+  }
+  Secondary("Мой профиль и замеры",profile)
+ }
+}
 
 @Composable fun ProfilePage(p:Profile,mode:ThemeMode,setMode:(ThemeMode)->Unit,items:List<Measurement>,add:(Measurement)->Unit,back:()->Unit){var tab by remember{mutableIntStateOf(0)};Page("Профиль",p.name){Segment(listOf("Профиль","Замеры"),if(tab==0)"Профиль" else "Замеры"){tab=if(it=="Профиль")0 else 1};if(tab==0)ProfileFields(p,mode,setMode) else Measurements(items,add);Secondary("Готово",back)}}
 @Composable fun ProfileFields(p:Profile,mode:ThemeMode,setMode:(ThemeMode)->Unit){PhotoPicker(p.photoUri){p.photoUri=it};Card{Text(if(p.name.isBlank())"Профиль" else p.name,fontSize=24.sp,fontWeight=FontWeight.Bold);Text(p.city,color=UiSub);Text(listOf(p.age.takeIf{it.isNotBlank()}?.let{"$it лет"},p.height.takeIf{it.isNotBlank()}?.let{"$it см"},p.weight.takeIf{it.isNotBlank()}?.let{"$it кг"}).filterNotNull().joinToString(" · "),color=UiSub)};Card{Text("О себе",fontWeight=FontWeight.Bold);Field("Род деятельности",p.occupation){p.occupation=it};Field("О себе",p.about,3){p.about=it}};Card{Text("Тренировки",fontWeight=FontWeight.Bold);Field("Цель",p.goal){p.goal=it};Field("Стаж тренировок",p.experience){p.experience=it};Field("Место",p.place){p.place=it};if(p.place=="Дом")Field("Оборудование",p.equipment){p.equipment=it}};Card{Text("Здоровье",fontWeight=FontWeight.Bold);Field("Противопоказания",p.health){p.health=it}};Card{Text("Основные данные",fontWeight=FontWeight.Bold);Field("Имя",p.name){p.name=it};Field("Город",p.city){p.city=it};Num("Возраст",p.age){if(it.length<=2)p.age=it};Num("Рост, см",p.height){if(it.length<=3)p.height=it};Num("Вес, кг",p.weight,true){if(it.length<=6)p.weight=it}};Card{Text("Оформление",fontWeight=FontWeight.Bold);Segment(listOf("Светлая","Система","Тёмная"),when(mode){ThemeMode.LIGHT->"Светлая";ThemeMode.SYSTEM->"Система";ThemeMode.DARK->"Тёмная"}){setMode(when(it){"Светлая"->ThemeMode.LIGHT;"Тёмная"->ThemeMode.DARK;else->ThemeMode.SYSTEM})}}}
