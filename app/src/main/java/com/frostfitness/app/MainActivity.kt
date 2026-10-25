@@ -69,34 +69,20 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
  }}}
 
 @Composable fun Welcome(next:()->Unit){
- BoxWithConstraints(
+ Column(
   Modifier.fillMaxSize()
    .background(Brush.verticalGradient(listOf(Color(0xFF08090B),Color(0xFF111214),Color.Black)))
    .statusBarsPadding().navigationBarsPadding()
+   .verticalScroll(rememberScrollState())
+   .padding(horizontal=24.dp),
+  verticalArrangement=Arrangement.spacedBy(20.dp)
  ){
-  val wide=maxWidth>=700.dp
-  if(wide){
-   Row(
-    Modifier.fillMaxSize().padding(horizontal=40.dp,vertical=28.dp),
-    horizontalArrangement=Arrangement.spacedBy(28.dp),
-    verticalAlignment=Alignment.CenterVertically
-   ){
-    WelcomeInfo(Modifier.weight(0.95f),next)
-    WelcomeVisual(Modifier.weight(1.05f).fillMaxHeight())
-   }
-  }else{
-   Column(
-    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal=20.dp),
-    verticalArrangement=Arrangement.spacedBy(16.dp)
-   ){
-    Spacer(Modifier.height(8.dp))
-    WelcomeInfo(Modifier.fillMaxWidth(),next,showButton=false)
-    WelcomeVisual(Modifier.fillMaxWidth().heightIn(min=300.dp,max=390.dp))
-    Primary("Заполнить анкету →",click=next)
-    WelcomeConsent()
-    Spacer(Modifier.height(18.dp))
-   }
-  }
+  Spacer(Modifier.height(20.dp))
+  WelcomeInfo(Modifier.fillMaxWidth(),next,showButton=false)
+  Spacer(Modifier.height(8.dp))
+  Primary("Заполнить анкету →",click=next)
+  WelcomeConsent()
+  Spacer(Modifier.height(24.dp))
  }
 }
 
@@ -139,34 +125,6 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
  Column(horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(5.dp)){
   Text(icon,fontSize=27.sp,fontWeight=FontWeight.Bold,color=color)
   Text(label,fontSize=12.sp,color=Color.White)
- }
-}
-
-@Composable fun WelcomeVisual(modifier:Modifier=Modifier){
- Box(
-  modifier.clip(RoundedCornerShape(28.dp))
-   .background(Color(0xFF141416))
-   .border(1.dp,Color.White.copy(alpha=.16f),RoundedCornerShape(28.dp))
- ){
-  Image(
-   painter=painterResource(R.drawable.welcome),
-   contentDescription="Фростик",
-   contentScale=ContentScale.Crop,
-   alignment=Alignment.BottomEnd,
-   modifier=Modifier.fillMaxSize()
-  )
-  Box(
-   Modifier.fillMaxSize().background(
-    Brush.verticalGradient(
-     listOf(Color.Black.copy(alpha=.12f),Color.Transparent,Color.Black.copy(alpha=.30f))
-    )
-   )
-  )
-  Text(
-   "ВМЕСТЕ\nК ЛУЧШЕЙ\nВЕРСИИ ТЕБЯ!",
-   color=Color.White,fontSize=15.sp,lineHeight=17.sp,fontWeight=FontWeight.Black,
-   modifier=Modifier.align(Alignment.TopEnd).padding(16.dp)
-  )
  }
 }
 
